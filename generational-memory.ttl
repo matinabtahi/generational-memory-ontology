@@ -196,17 +196,3 @@
     rdfs:domain :Memory ;
     rdfs:range xsd:string ;
     rdfs:label "tags" .
-
-#################################################################
-# Property Chain Suggestions (for Inference)
-#################################################################
-
-# :grandparentOf, :cousinOf, etc. can be derived later using property chains or SPARQL rules
-# Example (not active in v0.1):
-# :grandparentOf a owl:ObjectProperty ;
-#     owl:propertyChainAxiom ( :parentOf :parentOf ) .
-#
-# :cousinOf a owl:ObjectProperty ;
-#     owl:propertyChainAxiom (
-#         :childOf :siblingOf [ owl:inverseOf :childOf ]
-#     ) .
