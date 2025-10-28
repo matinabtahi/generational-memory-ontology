@@ -1,0 +1,198 @@
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix schema: <https://schema.org/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+#################################################################
+# Ontology Metadata
+#################################################################
+
+:GenerationalMemoryOntology a owl:Ontology ;
+    dc:title "Generational Memory Ontology" ;
+    dc:description """
+    An ontology for representing family relationships and generational memories
+    (in text, voice, photo, or video form). Designed for use in digital heritage,
+    genealogy platforms, and intergenerational storytelling systems.
+    """ ;
+    owl:versionInfo "v0.1" ;
+    dc:license "https://creativecommons.org/licenses/by/4.0/" ;
+    rdfs:comment "Core ontology for modeling generational relationships and multimodal memories. 
+    This file defines the foundational classes and properties. 
+    SHACL validation shapes and SPARQL inference/query rules are maintained in companion files, 
+    and a comprehensive example dataset (example-full-data.ttl) demonstrates their integrated use." .
+
+#################################################################
+# Core Classes
+#################################################################
+
+:Person a owl:Class ;
+    rdfs:subClassOf foaf:Person ;
+    rdfs:label "Person" ;
+    rdfs:comment "An individual in the family tree with biographical and media-linked data." .
+
+:Memory a owl:Class ;
+    rdfs:label "Memory" ;
+    rdfs:comment "A recorded memory or experience in any format (text, voice, photo, video)." .
+
+:Generation a owl:Class ;
+    rdfs:label "Generation" ;
+    rdfs:comment "A cohort of people grouped by familial or chronological generation." .
+
+:MediaObject a owl:Class ;
+    rdfs:subClassOf schema:MediaObject ;
+    rdfs:label "Media Object" ;
+    rdfs:comment "A digital artifact such as a photo, video, or audio recording." .
+
+#################################################################
+# Object Properties — Core Kinship and Structural Links
+#################################################################
+
+:parentOf a owl:ObjectProperty ;
+    rdfs:domain :Person ;
+    rdfs:range :Person ;
+    rdfs:label "parent of" ;
+    owl:inverseOf :childOf ;
+    rdfs:comment "Indicates a direct biological or adoptive parent-child relationship." .
+
+:childOf a owl:ObjectProperty ;
+    rdfs:domain :Person ;
+    rdfs:range :Person ;
+    rdfs:label "child of" ;
+    rdfs:comment "Inverse of parentOf; connects a child to their parent(s)." .
+
+:siblingOf a owl:ObjectProperty , owl:SymmetricProperty ;
+    rdfs:domain :Person ;
+    rdfs:range :Person ;
+    rdfs:label "sibling of" ;
+    rdfs:comment "Denotes a sibling relationship between two people." .
+
+:spouseOf a owl:ObjectProperty , owl:SymmetricProperty ;
+    rdfs:domain :Person ;
+    rdfs:range :Person ;
+    rdfs:label "spouse of" ;
+    rdfs:comment "Represents a marital or partner relationship between two people." .
+
+:ancestorOf a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:domain :Person ;
+    rdfs:range :Person ;
+    rdfs:label "ancestor of" ;
+    rdfs:comment "Indicates a transitive ancestral relationship inferred via parentOf links." .
+
+:descendantOf a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:domain :Person ;
+    rdfs:range :Person ;
+    rdfs:label "descendant of" ;
+    rdfs:comment "Indicates a transitive descendant relationship inferred via childOf links." .
+
+#################################################################
+# Object Properties — Memories and Generations
+#################################################################
+
+:recordedBy a owl:ObjectProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range :Person ;
+    rdfs:label "recorded by" ;
+    rdfs:comment "The person who created or recorded a memory artifact." .
+
+:aboutPerson a owl:ObjectProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range :Person ;
+    rdfs:label "about person" ;
+    rdfs:comment "Links a memory to the person or people it concerns." .
+
+:belongsToGeneration a owl:ObjectProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range :Generation ;
+    rdfs:label "belongs to generation" ;
+    rdfs:comment "Associates a memory with the generation to which it relates." .
+
+:hasMedia a owl:ObjectProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range :MediaObject ;
+    rdfs:label "has media" ;
+    rdfs:comment "Connects a memory to one or more media artifacts representing it." .
+
+:includesPerson a owl:ObjectProperty ;
+    rdfs:domain :Generation ;
+    rdfs:range :Person ;
+    rdfs:label "includes person" ;
+    rdfs:comment "Indicates that a person belongs to a given generation." .
+
+:followsGeneration a owl:ObjectProperty ;
+    rdfs:domain :Generation ;
+    rdfs:range :Generation ;
+    rdfs:label "follows generation" ;
+    rdfs:comment "Defines the temporal order between generations." .
+
+:references a owl:ObjectProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range :Memory ;
+    rdfs:label "references" ;
+    rdfs:comment "Links a memory to another that it refers to or builds upon." .
+
+:inspiredBy a owl:ObjectProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range :Memory ;
+    rdfs:label "inspired by" ;
+    rdfs:comment "Connects memories that share thematic or emotional continuity." .
+
+#################################################################
+# Data Properties — Attributes and Metadata
+#################################################################
+
+:name a owl:DatatypeProperty ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:string ;
+    rdfs:label "name" .
+
+:birthDate a owl:DatatypeProperty ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:date ;
+    rdfs:label "birth date" .
+
+:deathDate a owl:DatatypeProperty ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:date ;
+    rdfs:label "death date" .
+
+:biography a owl:DatatypeProperty ;
+    rdfs:domain :Person ;
+    rdfs:range xsd:string ;
+    rdfs:label "biography" .
+
+:fileURI a owl:DatatypeProperty ;
+    rdfs:domain :MediaObject ;
+    rdfs:range xsd:anyURI ;
+    rdfs:label "file URI" .
+
+:mediaType a owl:DatatypeProperty ;
+    rdfs:domain :MediaObject ;
+    rdfs:range xsd:string ;
+    rdfs:label "media type" .
+
+:dateOfEvent a owl:DatatypeProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range xsd:date ;
+    rdfs:label "date of event" .
+
+:dateRecorded a owl:DatatypeProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range xsd:date ;
+    rdfs:label "date recorded" .
+
+:contentText a owl:DatatypeProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range xsd:string ;
+    rdfs:label "content text" .
+
+:location a owl:DatatypeProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range xsd:string ;
+    rdfs:label "location" .
+
+:tags a owl:DatatypeProperty ;
+    rdfs:domain :Memory ;
+    rdfs:range xsd:string ;
+    rdfs:label "tags" .
