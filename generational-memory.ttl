@@ -21,7 +21,7 @@
     rdfs:comment "Core ontology for modeling generational relationships and multimodal memories. 
     This file defines the foundational classes and properties. 
     SHACL validation shapes and SPARQL inference/query rules are maintained in companion files, 
-    and a comprehensive example dataset (example-full-data.ttl) demonstrates their integrated use." .
+    and an example dataset demonstrates their integrated use." .
 
 #################################################################
 # Core Classes
