@@ -1,0 +1,126 @@
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+
+#################################################################
+# SECTION 1 — INFERENCE RULES (CONSTRUCT)
+#################################################################
+
+### 1.1 Infer Grandparent Relationships
+CONSTRUCT {
+  ?a :grandparentOf ?c .
+}
+WHERE {
+  ?a :parentOf ?b .
+  ?b :parentOf ?c .
+  FILTER(?a != ?c)
+} ;
+
+### 1.2 Infer Cousin Relationships
+CONSTRUCT {
+  ?a :cousinOf ?b .
+}
+WHERE {
+  ?a :childOf ?p1 .
+  ?b :childOf ?p2 .
+  ?p1 :siblingOf ?p2 .
+  FILTER(?a != ?b)
+} ;
+
+### 1.3 Infer Generation Membership from Birth Date Range
+CONSTRUCT {
+  ?person :belongsToGeneration ?gen .
+}
+WHERE {
+  ?person :birthDate ?date .
+  ?gen :ApproximateBirthRangeStart ?start ;
+       :ApproximateBirthRangeEnd ?end .
+  FILTER(?date >= ?start && ?date <= ?end)
+} ;
+
+### 1.4 Link Memories Recorded by the Same Person
+CONSTRUCT {
+  ?m1 :relatedTo ?m2 .
+}
+WHERE {
+  ?m1 :recordedBy ?p .
+  ?m2 :recordedBy ?p .
+  FILTER(?m1 != ?m2)
+} ;
+
+#################################################################
+# SECTION 2 — ANALYTICAL QUERIES (SELECT / CONSTRUCT)
+#################################################################
+
+### 2.1 Find All Memories Recorded by Descendants of [Person X]
+# Replace :Alice with any Person of interest
+
+SELECT DISTINCT ?descendant ?memory ?text ?date
+WHERE {
+  ?descendant (:descendantOf|:childOf|:ancestorOf/^:childOf)+ :Alice .
+  ?memory a :Memory ;
+          :recordedBy ?descendant ;
+          :contentText ?text ;
+          :dateRecorded ?date .
+}
+ORDER BY ?date ;
+
+#################################################################
+
+### 2.2 Show All Videos from the 2nd Generation About Migration
+
+SELECT DISTINCT ?memory ?file ?creator ?text
+WHERE {
+  ?gen a :Generation ;
+       rdfs:label "2nd Generation" .
+  ?memory a :Memory ;
+           :belongsToGeneration ?gen ;
+           :recordedBy ?creator ;
+           :hasMedia ?media ;
+           :contentText ?text .
+  ?media a :MediaObject ;
+         :mediaType "video" ;
+         :fileURI ?file .
+  FILTER(CONTAINS(LCASE(?text), "migration"))
+}
+ORDER BY ?creator ;
+
+#################################################################
+
+### 2.3 Retrieve All Memories Associated with the House in Tehran
+
+SELECT DISTINCT ?memory ?person ?media ?type ?date ?text
+WHERE {
+  ?memory a :Memory ;
+           :location ?loc ;
+           :aboutPerson ?person ;
+           :contentText ?text ;
+           :dateRecorded ?date .
+  OPTIONAL {
+    ?memory :hasMedia ?media .
+    ?media :mediaType ?type .
+  }
+  FILTER(CONTAINS(LCASE(?loc), "tehran"))
+}
+ORDER BY ?date ;
+
+#################################################################
+
+### 2.4 Visualize the Lineage Graph up to the Fourth Generation
+# Produces an edge list for graph visualization (Gephi, Cytoscape, etc.)
+
+CONSTRUCT {
+  ?ancestor :ancestorOf ?descendant .
+}
+WHERE {
+  ?ancestor :ancestorOf ?descendant .
+}
+LIMIT 100 ;
+
+### Alternative: restrict depth to 4 generations
+CONSTRUCT {
+  ?a :ancestorOf ?d .
+}
+WHERE {
+  ?a (:parentOf/:parentOf/:parentOf/:parentOf)? ?d .
+} ;
