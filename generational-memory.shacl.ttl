@@ -1,0 +1,74 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# SHACL Shapes for Generational Memory Ontology
+#################################################################
+
+# Person validation
+:PersonShape a sh:NodeShape ;
+    sh:targetClass :Person ;
+    sh:property [
+        sh:path :name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Every person must have a name." ;
+    ] ;
+    sh:property [
+        sh:path :birthDate ;
+        sh:datatype xsd:date ;
+        sh:message "Birth date must be a valid xsd:date." ;
+    ] ;
+    sh:property [
+        sh:path :deathDate ;
+        sh:datatype xsd:date ;
+        sh:lessThan :deathDate ;
+        sh:message "Birth date must be earlier than death date." ;
+    ] ;
+    sh:property [
+        sh:path :parentOf ;
+        sh:class :Person ;
+        sh:message "Parent must link to another Person." ;
+    ] .
+
+# Memory validation
+:MemoryShape a sh:NodeShape ;
+    sh:targetClass :Memory ;
+    sh:property [
+        sh:path :recordedBy ;
+        sh:class :Person ;
+        sh:minCount 1 ;
+        sh:message "Every memory must be recorded by at least one person." ;
+    ] ;
+    sh:property [
+        sh:path :hasMedia ;
+        sh:class :MediaObject ;
+        sh:minCount 0 ;
+        sh:message "If present, media must reference a valid MediaObject." ;
+    ] ;
+    sh:property [
+        sh:path :contentText ;
+        sh:datatype xsd:string ;
+        sh:message "Text-based memories must use contentText as xsd:string." ;
+    ] ;
+    sh:property [
+        sh:path :dateRecorded ;
+        sh:datatype xsd:date ;
+        sh:message "Recording date must be a valid xsd:date." ;
+    ] .
+
+# Generation validation
+:GenerationShape a sh:NodeShape ;
+    sh:targetClass :Generation ;
+    sh:property [
+        sh:path :includesPerson ;
+        sh:class :Person ;
+        sh:minCount 1 ;
+        sh:message "Each generation must include at least one person." ;
+    ] ;
+    sh:property [
+        sh:path :followsGeneration ;
+        sh:class :Generation ;
+        sh:maxCount 1 ;
+        sh:message "Each generation can follow at most one other generation." ;
+    ] .
