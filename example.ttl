@@ -1,0 +1,98 @@
+@prefix : <https://github.com/matin-lab/generational-memory-ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+#################################################################
+# People — three generations
+#################################################################
+
+:Alice a :Person ;
+    :name "Alice Thompson" ;
+    :birthDate "1945-07-12"^^xsd:date ;
+    :biography "Alice migrated from London to Toronto after finishing school." .
+
+:Robert a :Person ;
+    :name "Robert Thompson" ;
+    :birthDate "1970-05-03"^^xsd:date ;
+    :childOf :Alice ;
+    :spouseOf :Natalie ;
+    :biography "Software engineer, grew up hearing Alice’s migration stories." .
+
+:Natalie a :Person ;
+    :name "Natalie Green" ;
+    :birthDate "1975-01-21"^^xsd:date ;
+    :biography "Teacher and community historian with roots in Manchester." .
+
+:Laura a :Person ;
+    :name "Laura Thompson" ;
+    :birthDate "2000-09-17"^^xsd:date ;
+    :childOf :Robert, :Natalie ;
+    :biography "Media artist documenting family stories through film and digital archives." .
+
+#################################################################
+# Generations
+#################################################################
+
+:Generation_Postwar a :Generation ;
+    rdfs:label "1st Generation" ;
+    :includesPerson :Alice .
+
+:Generation_Digital a :Generation ;
+    rdfs:label "2nd Generation" ;
+    :includesPerson :Robert, :Natalie ;
+    :followsGeneration :Generation_Postwar .
+
+:Generation_NewCentury a :Generation ;
+    rdfs:label "3rd Generation" ;
+    :includesPerson :Laura ;
+    :followsGeneration :Generation_Digital .
+
+#################################################################
+# Memories and Media
+#################################################################
+
+:Memory_Migration a :Memory ;
+    :contentText "Alice recalls moving from London to Toronto in 1963 to start a new life." ;
+    :location "London" ;
+    :dateRecorded "2005-04-02"^^xsd:date ;
+    :recordedBy :Alice ;
+    :hasMedia :Photo_Migration ;
+    :aboutPerson :Alice ;
+    :belongsToGeneration :Generation_Postwar .
+
+:Photo_Migration a :MediaObject ;
+    :mediaType "photo" ;
+    :fileURI <https://example.org/media/alice_london_migration.jpg> ;
+    dc:description "Alice aboard the ship to Canada, 1963." .
+
+:Memory_FamilyHome a :Memory ;
+    :contentText "Laura visits the old family house in London, filming her reflections on her grandmother’s stories." ;
+    :location "London" ;
+    :dateRecorded "2021-06-12"^^xsd:date ;
+    :recordedBy :Laura ;
+    :hasMedia :Video_FamilyHome ;
+    :aboutPerson :Alice ;
+    :belongsToGeneration :Generation_NewCentury .
+
+:Video_FamilyHome a :MediaObject ;
+    :mediaType "video" ;
+    :fileURI <https://example.org/media/laura_family_home.mp4> ;
+    dc:description "Laura’s short documentary revisiting her grandmother’s migration to Toronto." .
+
+#################################################################
+# Derived relationships (inference targets)
+#################################################################
+# Inferred by :grandparentOf rule
+:Alice :grandparentOf :Laura .
+
+# Inferred by :relatedTo rule
+:Memory_Migration :relatedTo :Memory_FamilyHome .
+:Memory_FamilyHome :relatedTo :Memory_Migration .
+
+# Inferred by generation membership (if you define birth ranges)
+:Alice :belongsToGeneration :Generation_Postwar .
+:Robert :belongsToGeneration :Generation_Digital .
+:Natalie :belongsToGeneration :Generation_Digital .
+:Laura :belongsToGeneration :Generation_NewCentury .
+
