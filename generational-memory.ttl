@@ -199,7 +199,7 @@
     rdfs:label "tags" .
 
 #################################################################
-# Property Chain Suggestions (for Future Inference)
+# Property Chain Suggestions (for Inference)
 #################################################################
 
 # :grandparentOf, :cousinOf, etc. can be derived later using property chains or SPARQL rules
