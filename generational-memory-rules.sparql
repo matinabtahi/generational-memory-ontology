@@ -5,7 +5,7 @@ PREFIX dc:     <http://purl.org/dc/elements/1.1/>
 PREFIX dcterms:<http://purl.org/dc/terms/>
 
 #################################################################
-# GMO (new version) — SPARQL Rules + Queries
+# GMO — SPARQL Rules + Queries
 #
 # Notes
 # - Uses the v0.1+ model that includes Agent/Organization/Place/Event/Relationship/Role
