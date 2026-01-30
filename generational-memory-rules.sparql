@@ -1,12 +1,25 @@
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX :       <https://github.com/matin-lab/generational-memory-ontology#>
+PREFIX xsd:    <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dc:     <http://purl.org/dc/elements/1.1/>
+PREFIX dcterms:<http://purl.org/dc/terms/>
+
+#################################################################
+# GMO (new version) — SPARQL Rules + Queries
+#
+# Notes
+# - Uses the v0.1+ model that includes Agent/Organization/Place/Event/Relationship/Role
+# - Keeps kinship inference separate from social Relationship modeling
+# - Where the old model used :location (string), the new model prefers :aboutPlace / :hasPlace
+#   but still works with :location when present
+#################################################################
+
 
 #################################################################
 # SECTION 1 — INFERENCE RULES (CONSTRUCT)
 #################################################################
 
-### 1.1 Infer Grandparent Relationships
+### 1.1 Infer Grandparent Relationships (still valid)
 CONSTRUCT {
   ?a :grandparentOf ?c .
 }
@@ -16,7 +29,7 @@ WHERE {
   FILTER(?a != ?c)
 } ;
 
-### 1.2 Infer Cousin Relationships
+### 1.2 Infer Cousin Relationships (still valid)
 CONSTRUCT {
   ?a :cousinOf ?b .
 }
@@ -27,24 +40,62 @@ WHERE {
   FILTER(?a != ?b)
 } ;
 
-### 1.3 Infer Generation Membership from Birth Date Range
+### 1.3 Infer Person ↔ Generation Membership from Birth Date Ranges
+# IMPORTANT:
+# - In the ontology, generation membership is modeled as :memberOfGeneration (Person → Generation)
+# - This rule constructs :memberOfGeneration (and you still have :includesPerson as inverse)
+#
+# You will need these two datatype properties in your dataset/schema if you want this rule:
+#   :ApproximateBirthRangeStart  xsd:date
+#   :ApproximateBirthRangeEnd    xsd:date
+#
 CONSTRUCT {
-  ?person :belongsToGeneration ?gen .
+  ?person :memberOfGeneration ?gen .
 }
 WHERE {
-  ?person :birthDate ?date .
-  ?gen :ApproximateBirthRangeStart ?start ;
+  ?person a :Person ;
+          :birthDate ?date .
+  ?gen a :Generation ;
+       :ApproximateBirthRangeStart ?start ;
        :ApproximateBirthRangeEnd ?end .
   FILTER(?date >= ?start && ?date <= ?end)
 } ;
 
-### 1.4 Link Memories Recorded by the Same Person
+### 1.4 Link Memories Recorded by the Same Agent (person or organization)
+# New model generalizes :recordedBy to :Agent (Person or Organization)
 CONSTRUCT {
   ?m1 :relatedTo ?m2 .
 }
 WHERE {
-  ?m1 :recordedBy ?p .
-  ?m2 :recordedBy ?p .
+  ?m1 a :Memory ; :recordedBy ?a .
+  ?m2 a :Memory ; :recordedBy ?a .
+  FILTER(?m1 != ?m2)
+} ;
+
+### 1.5 Link Memories About the Same Event (new, structure-aware)
+CONSTRUCT {
+  ?m1 :relatedTo ?m2 .
+}
+WHERE {
+  ?m1 a :Memory ; :aboutEvent ?e .
+  ?m2 a :Memory ; :aboutEvent ?e .
+  FILTER(?m1 != ?m2)
+} ;
+
+### 1.6 Link Memories About the Same Place (structured place; fallback to text location)
+CONSTRUCT {
+  ?m1 :relatedTo ?m2 .
+}
+WHERE {
+  {
+    ?m1 a :Memory ; :aboutPlace ?p .
+    ?m2 a :Memory ; :aboutPlace ?p .
+  }
+  UNION
+  {
+    ?m1 a :Memory ; :location ?loc .
+    ?m2 a :Memory ; :location ?loc .
+  }
   FILTER(?m1 != ?m2)
 } ;
 
@@ -54,10 +105,11 @@ WHERE {
 
 ### 2.1 Find All Memories Recorded by Descendants of [Person X]
 # Replace :Alice with any Person of interest
-
 SELECT DISTINCT ?descendant ?memory ?text ?date
 WHERE {
-  ?descendant (:descendantOf|:childOf|:ancestorOf/^:childOf)+ :Alice .
+  # descendants via parent-child closure
+  ?descendant (:childOf)+ :Alice .
+
   ?memory a :Memory ;
           :recordedBy ?descendant ;
           :contentText ?text ;
@@ -67,48 +119,70 @@ ORDER BY ?date ;
 
 #################################################################
 
-### 2.2 Show All Videos from the 2nd Generation About Migration
-
+### 2.2 Show All Videos from the "2nd Generation" About Migration
+# Updates:
+# - Media type typically uses MIME strings in the new example (e.g., "video/mp4")
+# - We match any mediaType that starts with "video"
+# - Memories can reference events/places; we still filter by text content for "migration"
 SELECT DISTINCT ?memory ?file ?creator ?text
 WHERE {
   ?gen a :Generation ;
        rdfs:label "2nd Generation" .
+
   ?memory a :Memory ;
-           :belongsToGeneration ?gen ;
-           :recordedBy ?creator ;
-           :hasMedia ?media ;
-           :contentText ?text .
+          :belongsToGeneration ?gen ;
+          :recordedBy ?creator ;
+          :hasMedia ?media ;
+          :contentText ?text .
+
   ?media a :MediaObject ;
-         :mediaType "video" ;
+         :mediaType ?mt ;
          :fileURI ?file .
-  FILTER(CONTAINS(LCASE(?text), "migration"))
+
+  FILTER(STRSTARTS(LCASE(STR(?mt)), "video"))
+  FILTER(CONTAINS(LCASE(STR(?text)), "migration"))
 }
 ORDER BY ?creator ;
 
 #################################################################
 
-### 2.3 Retrieve All Memories Associated with the House in Tehran
-
-SELECT DISTINCT ?memory ?person ?media ?type ?date ?text
+### 2.3 Retrieve All Memories Associated with "the House in Tehran"
+# Updates:
+# - Prefer structured place queries (:aboutPlace with rdfs:label), but keep fallback to :location
+# - This query returns both patterns
+SELECT DISTINCT ?memory ?person ?place ?placeLabel ?media ?type ?date ?text
 WHERE {
   ?memory a :Memory ;
-           :location ?loc ;
-           :aboutPerson ?person ;
-           :contentText ?text ;
-           :dateRecorded ?date .
+          :contentText ?text ;
+          :dateRecorded ?date .
+
+  OPTIONAL { ?memory :aboutPerson ?person . }
+
   OPTIONAL {
     ?memory :hasMedia ?media .
-    ?media :mediaType ?type .
+    OPTIONAL { ?media :mediaType ?type . }
   }
-  FILTER(CONTAINS(LCASE(?loc), "tehran"))
+
+  OPTIONAL {
+    ?memory :aboutPlace ?place .
+    OPTIONAL { ?place rdfs:label ?placeLabel . }
+  }
+
+  OPTIONAL { ?memory :location ?loc . }
+
+  FILTER(
+    (BOUND(?placeLabel) && CONTAINS(LCASE(STR(?placeLabel)), "tehran"))
+    ||
+    (BOUND(?loc) && CONTAINS(LCASE(STR(?loc)), "tehran"))
+  )
 }
 ORDER BY ?date ;
 
 #################################################################
 
-### 2.4 Visualize the Lineage Graph up to the Fourth Generation
+### 2.4 Visualize the Lineage Graph (edge list)
 # Produces an edge list for graph visualization (Gephi, Cytoscape, etc.)
-
+# If you already materialize :ancestorOf, this returns it directly:
 CONSTRUCT {
   ?ancestor :ancestorOf ?descendant .
 }
@@ -117,10 +191,42 @@ WHERE {
 }
 LIMIT 100 ;
 
-### Alternative: restrict depth to 4 generations
+#################################################################
+
+### 2.5 Alternative: Restrict lineage depth to 4 generations (using :parentOf paths)
+# This constructs ancestor edges up to depth 4 even if :ancestorOf is not materialized.
 CONSTRUCT {
   ?a :ancestorOf ?d .
 }
 WHERE {
-  ?a (:parentOf/:parentOf/:parentOf/:parentOf)? ?d .
+  {
+    ?a :parentOf ?d .
+  }
+  UNION {
+    ?a :parentOf/:parentOf ?d .
+  }
+  UNION {
+    ?a :parentOf/:parentOf/:parentOf ?d .
+  }
+  UNION {
+    ?a :parentOf/:parentOf/:parentOf/:parentOf ?d .
+  }
+  FILTER(?a != ?d)
 } ;
+
+#################################################################
+
+### 2.6 (New) Social graph edges from :Relationship instances (for visualization)
+# Extracts a simple edge list: agent1 --(relationshipType)--> agent2
+SELECT DISTINCT ?a1 ?a2 ?rtype ?rtypeLabel ?rel ?start ?end
+WHERE {
+  ?rel a :Relationship ;
+       :hasParticipant ?a1, ?a2 ;
+       :relationshipType ?rtype .
+  OPTIONAL { ?rtype rdfs:label ?rtypeLabel . }
+  OPTIONAL { ?rel :relationshipStart ?start . }
+  OPTIONAL { ?rel :relationshipEnd ?end . }
+
+  FILTER(?a1 != ?a2)
+}
+ORDER BY ?rtypeLabel ?a1 ?a2 ;
