@@ -1,74 +1,445 @@
+@prefix : <https://github.com/matin-lab/generational-memory-ontology#> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 #################################################################
-# SHACL Shapes for Generational Memory Ontology
+# SHACL Shapes for Generational Memory Ontology (GMO)
+# Version: aligned with GMO v0.1 (Agent/Organization/Place/Event/Relationship/Role)
+#
+# Goals
+# - Validate core data integrity without over-constraining
+# - Keep shapes lightweight (matching the ontology philosophy)
+# - Support both structured place/event links and legacy free-text location
 #################################################################
 
+
+#################################################################
 # Person validation
+#################################################################
+
 :PersonShape a sh:NodeShape ;
     sh:targetClass :Person ;
+
     sh:property [
         sh:path :name ;
         sh:datatype xsd:string ;
         sh:minCount 1 ;
-        sh:message "Every person must have a name." ;
+        sh:message "Every Person must have exactly one :name (xsd:string) or at least one :name." ;
     ] ;
+
     sh:property [
         sh:path :birthDate ;
         sh:datatype xsd:date ;
-        sh:message "Birth date must be a valid xsd:date." ;
+        sh:maxCount 1 ;
+        sh:message "If provided, :birthDate must be a valid xsd:date (max 1)." ;
     ] ;
+
     sh:property [
         sh:path :deathDate ;
         sh:datatype xsd:date ;
-        sh:lessThan :deathDate ;
-        sh:message "Birth date must be earlier than death date." ;
+        sh:maxCount 1 ;
+        sh:message "If provided, :deathDate must be a valid xsd:date (max 1)." ;
     ] ;
+
+    # birthDate < deathDate (only when both exist)
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "If both :birthDate and :deathDate are present, :birthDate must be earlier than :deathDate." ;
+        sh:select """
+            SELECT $this
+            WHERE {
+              $this :birthDate ?b .
+              $this :deathDate ?d .
+              FILTER(?b >= ?d)
+            }
+        """ ;
+    ] ;
+
+    # kinship link types
     sh:property [
         sh:path :parentOf ;
         sh:class :Person ;
-        sh:message "Parent must link to another Person." ;
+        sh:message "If present, :parentOf must point to a :Person." ;
+    ] ;
+
+    sh:property [
+        sh:path :childOf ;
+        sh:class :Person ;
+        sh:message "If present, :childOf must point to a :Person." ;
+    ] ;
+
+    sh:property [
+        sh:path :spouseOf ;
+        sh:class :Person ;
+        sh:message "If present, :spouseOf must point to a :Person." ;
+    ] ;
+
+    sh:property [
+        sh:path :siblingOf ;
+        sh:class :Person ;
+        sh:message "If present, :siblingOf must point to a :Person." ;
+    ] ;
+
+    # generation membership (new direction in the new model)
+    sh:property [
+        sh:path :memberOfGeneration ;
+        sh:class :Generation ;
+        sh:message "If present, :memberOfGeneration must point to a :Generation." ;
+    ] ;
+
+    # social relationships (new model)
+    sh:property [
+        sh:path :hasRelationship ;
+        sh:class :Relationship ;
+        sh:message "If present, :hasRelationship must point to a :Relationship instance." ;
     ] .
 
-# Memory validation
+
+#################################################################
+# Agent validation 
+#################################################################
+
+:AgentShape a sh:NodeShape ;
+    sh:targetClass :Agent ;
+
+    sh:property [
+        sh:path :hasRelationship ;
+        sh:class :Relationship ;
+        sh:message "If present, :hasRelationship must point to a :Relationship instance." ;
+    ] .
+
+
+#################################################################
+# Organization validation 
+#################################################################
+
+:OrganizationShape a sh:NodeShape ;
+    sh:targetClass :Organization ;
+
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Every Organization should have an rdfs:label (xsd:string)." ;
+    ] .
+
+
+#################################################################
+# Relationship validation 
+#################################################################
+
+:RelationshipShape a sh:NodeShape ;
+    sh:targetClass :Relationship ;
+
+    # must have at least 2 participants
+    sh:property [
+        sh:path :hasParticipant ;
+        sh:class :Agent ;
+        sh:minCount 2 ;
+        sh:message "Every Relationship must have at least two :hasParticipant values, each an :Agent." ;
+    ] ;
+
+    # must have a relationship type
+    sh:property [
+        sh:path :relationshipType ;
+        sh:class :Role ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Every Relationship must have exactly one :relationshipType that is a :Role." ;
+    ] ;
+
+    # participantRole is optional but must be Role(s) if present
+    sh:property [
+        sh:path :participantRole ;
+        sh:class :Role ;
+        sh:message "If present, :participantRole values must be :Role." ;
+    ] ;
+
+    # relationshipStart/end are optional but if both present start < end
+    sh:property [
+        sh:path :relationshipStart ;
+        sh:datatype xsd:date ;
+        sh:maxCount 1 ;
+        sh:message "If provided, :relationshipStart must be a valid xsd:date (max 1)." ;
+    ] ;
+
+    sh:property [
+        sh:path :relationshipEnd ;
+        sh:datatype xsd:date ;
+        sh:maxCount 1 ;
+        sh:message "If provided, :relationshipEnd must be a valid xsd:date (max 1)." ;
+    ] ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "If both :relationshipStart and :relationshipEnd are present, :relationshipStart must be earlier than :relationshipEnd." ;
+        sh:select """
+            SELECT $this
+            WHERE {
+              $this :relationshipStart ?s .
+              $this :relationshipEnd ?e .
+              FILTER(?s >= ?e)
+            }
+        """ ;
+    ] .
+
+
+#################################################################
+# Memory validation 
+#################################################################
+
 :MemoryShape a sh:NodeShape ;
     sh:targetClass :Memory ;
+
     sh:property [
         sh:path :recordedBy ;
-        sh:class :Person ;
+        sh:class :Agent ;
         sh:minCount 1 ;
-        sh:message "Every memory must be recorded by at least one person." ;
+        sh:message "Every Memory must have at least one :recordedBy value (an :Agent)." ;
     ] ;
-    sh:property [
-        sh:path :hasMedia ;
-        sh:class :MediaObject ;
-        sh:minCount 0 ;
-        sh:message "If present, media must reference a valid MediaObject." ;
-    ] ;
+
     sh:property [
         sh:path :contentText ;
         sh:datatype xsd:string ;
-        sh:message "Text-based memories must use contentText as xsd:string." ;
+        sh:minCount 1 ;
+        sh:message "Every Memory must have :contentText as xsd:string." ;
     ] ;
+
     sh:property [
         sh:path :dateRecorded ;
         sh:datatype xsd:date ;
-        sh:message "Recording date must be a valid xsd:date." ;
+        sh:maxCount 1 ;
+        sh:message "If provided, :dateRecorded must be a valid xsd:date (max 1)." ;
+    ] ;
+
+    sh:property [
+        sh:path :dateOfEvent ;
+        sh:datatype xsd:date ;
+        sh:maxCount 1 ;
+        sh:message "If provided, :dateOfEvent must be a valid xsd:date (max 1)." ;
+    ] ;
+
+    # structured links (optional)
+    sh:property [
+        sh:path :aboutPerson ;
+        sh:class :Person ;
+        sh:message "If present, :aboutPerson must point to a :Person." ;
+    ] ;
+
+    sh:property [
+        sh:path :aboutOrganization ;
+        sh:class :Organization ;
+        sh:message "If present, :aboutOrganization must point to an :Organization." ;
+    ] ;
+
+    sh:property [
+        sh:path :aboutEvent ;
+        sh:class :Event ;
+        sh:message "If present, :aboutEvent must point to an :Event." ;
+    ] ;
+
+    sh:property [
+        sh:path :aboutPlace ;
+        sh:class :Place ;
+        sh:message "If present, :aboutPlace must point to a :Place." ;
+    ] ;
+
+    # legacy fallback
+    sh:property [
+        sh:path :location ;
+        sh:datatype xsd:string ;
+        sh:message "If present, :location must be xsd:string (legacy free-text location)." ;
+    ] ;
+
+    # require at least one place signal: either :aboutPlace or :location (but not mandatory overall)
+    # This is a soft integrity rule: if you choose to store location, it must appear in at least one form.
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "If a Memory has any location info, use either :aboutPlace (preferred) or :location (legacy). At least one must be present when locations are being tracked." ;
+        sh:select """
+            SELECT $this
+            WHERE {
+              $this a :Memory .
+              FILTER NOT EXISTS { $this :aboutPlace ?p . }
+              FILTER NOT EXISTS { $this :location ?l . }
+              # Comment out the next line if you do NOT want to require place info at all.
+              # FILTER EXISTS { $this :dateOfEvent ?x }  # Example condition hook (optional)
+            }
+        """ ;
+    ] ;
+
+    sh:property [
+        sh:path :hasMedia ;
+        sh:class :MediaObject ;
+        sh:message "If present, :hasMedia must reference a valid :MediaObject." ;
+    ] ;
+
+    sh:property [
+        sh:path :belongsToGeneration ;
+        sh:class :Generation ;
+        sh:message "If present, :belongsToGeneration must point to a :Generation." ;
+    ] ;
+
+    sh:property [
+        sh:path :references ;
+        sh:class :Memory ;
+        sh:message "If present, :references must point to another :Memory." ;
+    ] ;
+
+    sh:property [
+        sh:path :inspiredBy ;
+        sh:class :Memory ;
+        sh:message "If present, :inspiredBy must point to another :Memory." ;
+    ] ;
+
+    # provenance fields (optional)
+    sh:property [
+        sh:path :source ;
+        sh:datatype xsd:anyURI ;
+        sh:message "If present, :source must be xsd:anyURI." ;
+    ] ;
+
+    sh:property [
+        sh:path :confidence ;
+        sh:datatype xsd:decimal ;
+        sh:message "If present, :confidence must be an xsd:decimal (recommended range [0,1] by convention)." ;
+    ] ;
+
+    # Optional constraint: confidence in [0,1]
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "If :confidence is provided, it should be between 0 and 1 (inclusive)." ;
+        sh:select """
+            SELECT $this
+            WHERE {
+              $this :confidence ?c .
+              FILTER(?c < 0 || ?c > 1)
+            }
+        """ ;
+    ] ;
+
+    # optional controlled tags
+    sh:property [
+        sh:path :hasTag ;
+        sh:class skos:Concept ;
+        sh:message "If present, :hasTag must point to a skos:Concept." ;
+    ] ;
+
+    sh:property [
+        sh:path :tags ;
+        sh:datatype xsd:string ;
+        sh:message "If present, :tags must be xsd:string (free-text tags)." ;
     ] .
 
-# Generation validation
+
+#################################################################
+# MediaObject validation
+#################################################################
+
+:MediaObjectShape a sh:NodeShape ;
+    sh:targetClass :MediaObject ;
+
+    sh:property [
+        sh:path :fileURI ;
+        sh:datatype xsd:anyURI ;
+        sh:minCount 1 ;
+        sh:message "Every MediaObject must have a :fileURI (xsd:anyURI)." ;
+    ] ;
+
+    sh:property [
+        sh:path :mediaType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Every MediaObject must have a :mediaType (xsd:string), e.g., video/mp4, image/jpeg." ;
+    ] .
+
+
+#################################################################
+# Generation validation 
+#################################################################
+
 :GenerationShape a sh:NodeShape ;
     sh:targetClass :Generation ;
+
     sh:property [
         sh:path :includesPerson ;
         sh:class :Person ;
         sh:minCount 1 ;
-        sh:message "Each generation must include at least one person." ;
+        sh:message "Each Generation must include at least one :Person via :includesPerson." ;
     ] ;
+
     sh:property [
         sh:path :followsGeneration ;
         sh:class :Generation ;
         sh:maxCount 1 ;
-        sh:message "Each generation can follow at most one other generation." ;
+        sh:message "Each Generation can follow at most one other Generation." ;
+    ] ;
+
+    # Optional: prevent cycles in followsGeneration (lightweight)
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "A Generation must not (directly or indirectly) follow itself." ;
+        sh:select """
+            SELECT $this
+            WHERE {
+              $this (:followsGeneration)+ $this .
+            }
+        """ ;
+    ] .
+
+
+#################################################################
+# Event validation 
+#################################################################
+
+:EventShape a sh:NodeShape ;
+    sh:targetClass :Event ;
+
+    sh:property [
+        sh:path :timeStart ;
+        sh:datatype xsd:date ;
+        sh:maxCount 1 ;
+        sh:message "If provided, :timeStart must be xsd:date (max 1)." ;
+    ] ;
+
+    sh:property [
+        sh:path :timeEnd ;
+        sh:datatype xsd:date ;
+        sh:maxCount 1 ;
+        sh:message "If provided, :timeEnd must be xsd:date (max 1)." ;
+    ] ;
+
+    sh:property [
+        sh:path :hasPlace ;
+        sh:class :Place ;
+        sh:message "If present, :hasPlace must point to a :Place." ;
+    ] ;
+
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:message "If both :timeStart and :timeEnd are present, :timeStart must be earlier than :timeEnd." ;
+        sh:select """
+            SELECT $this
+            WHERE {
+              $this :timeStart ?s .
+              $this :timeEnd ?e .
+              FILTER(?s >= ?e)
+            }
+        """ ;
+    ] .
+
+
+#################################################################
+# Place validation 
+#################################################################
+
+:PlaceShape a sh:NodeShape ;
+    sh:targetClass :Place ;
+
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Every Place should have an rdfs:label (xsd:string)." ;
     ] .
