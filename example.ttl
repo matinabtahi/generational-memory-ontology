@@ -4,6 +4,17 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 #################################################################
+# Example Dataset (aligned with GMO v0.1 that includes Relationship/Event/Place/Organization/Role)
+#
+# What this example demonstrates
+# - 3 generations (people + generation ordering)
+# - Memories linked to structured Place and Event (not only free-text location)
+# - A non-family relationship modeled via :Relationship (Employment + Mentorship)
+# - Organization as an Agent in a relationship
+# - Optional: keeping :location (free text) alongside structured :aboutPlace
+#################################################################
+
+#################################################################
 # People — three generations
 #################################################################
 
@@ -49,50 +60,128 @@
     :followsGeneration :Generation_Digital .
 
 #################################################################
-# Memories and Media
+# Places (structured locations)
+#################################################################
+
+:London a :Place ;
+    rdfs:label "London, UK" .
+
+:Toronto a :Place ;
+    rdfs:label "Toronto, Canada" .
+
+:ThompsonHouse_London a :Place ;
+    rdfs:label "Thompson Family Home (London)" .
+
+#################################################################
+# Events (structured occurrences)
+#################################################################
+
+:Event_Migration1963 a :Event ;
+    rdfs:label "Alice migrates from London to Toronto" ;
+    :timeStart "1963-08-01"^^xsd:date ;
+    :hasPlace :London .
+
+:Event_FamilyHomeVisit2021 a :Event ;
+    rdfs:label "Laura visits the old family home and films reflections" ;
+    :timeStart "2021-06-12"^^xsd:date ;
+    :hasPlace :ThompsonHouse_London .
+
+#################################################################
+# Organization (non-family social actor)
+#################################################################
+
+:TorontoFilmCollective a :Organization ;
+    rdfs:label "Toronto Film Collective" ;
+    dc:description "A community arts organization supporting documentary projects." .
+
+#################################################################
+# Roles (minimal vocabulary instances)
+#################################################################
+
+:Employment a :Role ; rdfs:label "Employment" .
+:Mentorship a :Role ; rdfs:label "Mentorship" .
+
+:Employer a :Role ; rdfs:label "Employer" .
+:Employee a :Role ; rdfs:label "Employee" .
+:Mentor a :Role ; rdfs:label "Mentor" .
+:Mentee a :Role ; rdfs:label "Mentee" .
+
+#################################################################
+# Non-family Relationships (reified)
+#################################################################
+# Example 1: Employment relationship between Robert and an organization
+
+:Rel_Robert_Employment a :Relationship ;
+    rdfs:label "Robert employed by Toronto Film Collective" ;
+    :hasParticipant :Robert, :TorontoFilmCollective ;
+    :relationshipType :Employment ;
+    :participantRole :Employee, :Employer ;
+    :relationshipStart "2012-09-01"^^xsd:date ;
+    :relationshipEnd "2018-06-30"^^xsd:date .
+
+:Robert :hasRelationship :Rel_Robert_Employment .
+:TorontoFilmCollective :hasRelationship :Rel_Robert_Employment .
+
+# Example 2: Mentorship relationship between Natalie and Laura (non-kinship social link)
+
+:Rel_Natalie_Laura_Mentorship a :Relationship ;
+    rdfs:label "Natalie mentors Laura in oral history methods" ;
+    :hasParticipant :Natalie, :Laura ;
+    :relationshipType :Mentorship ;
+    :participantRole :Mentor, :Mentee ;
+    :relationshipStart "2016-01-01"^^xsd:date .
+
+:Natalie :hasRelationship :Rel_Natalie_Laura_Mentorship .
+:Laura   :hasRelationship :Rel_Natalie_Laura_Mentorship .
+
+#################################################################
+# Memories and Media (now linked to Person + Event + Place)
 #################################################################
 
 :Memory_Migration a :Memory ;
     :contentText "Alice recalls moving from London to Toronto in 1963 to start a new life." ;
-    :location "London" ;
     :dateRecorded "2005-04-02"^^xsd:date ;
     :recordedBy :Alice ;
     :hasMedia :Photo_Migration ;
     :aboutPerson :Alice ;
-    :belongsToGeneration :Generation_Postwar .
+    :aboutEvent :Event_Migration1963 ;
+    :aboutPlace :London ;
+    :belongsToGeneration :Generation_Postwar ;
+    :location "London" ;
+    :source <https://example.org/archive/interview_alice_2005> ;
+    :confidence "0.85"^^xsd:decimal .
 
 :Photo_Migration a :MediaObject ;
-    :mediaType "photo" ;
+    :mediaType "image/jpeg" ;
     :fileURI <https://example.org/media/alice_london_migration.jpg> ;
     dc:description "Alice aboard the ship to Canada, 1963." .
 
 :Memory_FamilyHome a :Memory ;
-    :contentText "Laura visits the old family house in London, filming her reflections on her grandmother’s stories." ;
-    :location "London" ;
+    :contentText "Laura visits the old family house in London, filming reflections on her grandmother’s stories." ;
     :dateRecorded "2021-06-12"^^xsd:date ;
     :recordedBy :Laura ;
     :hasMedia :Video_FamilyHome ;
     :aboutPerson :Alice ;
-    :belongsToGeneration :Generation_NewCentury .
+    :aboutEvent :Event_FamilyHomeVisit2021 ;
+    :aboutPlace :ThompsonHouse_London ;
+    :belongsToGeneration :Generation_NewCentury ;
+    :location "London" ;
+    :references :Memory_Migration .
 
 :Video_FamilyHome a :MediaObject ;
-    :mediaType "video" ;
+    :mediaType "video/mp4" ;
     :fileURI <https://example.org/media/laura_family_home.mp4> ;
     dc:description "Laura’s short documentary revisiting her grandmother’s migration to Toronto." .
 
 #################################################################
-# Derived relationships (inference targets)
+# Notes on Inference Targets (not asserted here)
 #################################################################
-# Inferred by :grandparentOf rule
-:Alice :grandparentOf :Laura .
-
-# Inferred by :relatedTo rule
-:Memory_Migration :relatedTo :Memory_FamilyHome .
-:Memory_FamilyHome :relatedTo :Memory_Migration .
-
-# Inferred by generation membership (if you define birth ranges)
-:Alice :belongsToGeneration :Generation_Postwar .
-:Robert :belongsToGeneration :Generation_Digital .
-:Natalie :belongsToGeneration :Generation_Digital .
-:Laura :belongsToGeneration :Generation_NewCentury .
-
+# - If you maintain SPARQL rules, you can infer :ancestorOf / :descendantOf from :parentOf closure
+# - You can infer memory links via :references or :inspiredBy patterns (application-defined)
+# - Generation membership can be asserted via :memberOfGeneration (inverse of :includesPerson) if desired
+#
+# Example (optional, explicit inverse usage):
+# :Alice  :memberOfGeneration :Generation_Postwar .
+# :Robert :memberOfGeneration :Generation_Digital .
+# :Natalie:memberOfGeneration :Generation_Digital .
+# :Laura  :memberOfGeneration :Generation_NewCentury .
