@@ -1,0 +1,82 @@
+@prefix gmont: <https://matinabtahi.github.io/Generational-Memory-Ontology-GMOnt/GMOnt#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ex: <https://example.org/building-lifecycle#> .
+
+# Application example only: GMOnt remains domain-general.
+
+ex:BuildingA a gmont:Object ;
+    gmont:name "Example Building A" ;
+    gmont:identifier "BLDG-A" .
+
+ex:DesignStage a gmont:Generation ; rdfs:label "design stage"@en ; gmont:includesEntity ex:BuildingA .
+ex:ConstructionStage a gmont:Generation ; rdfs:label "construction stage"@en ; gmont:followsGeneration ex:DesignStage ; gmont:includesEntity ex:BuildingA .
+ex:RetrofitStage a gmont:Generation ; rdfs:label "retrofit stage"@en ; gmont:followsGeneration ex:ConstructionStage ; gmont:includesEntity ex:BuildingA .
+ex:OperationStage a gmont:Generation ; rdfs:label "post-retrofit operation stage"@en ; gmont:followsGeneration ex:RetrofitStage ; gmont:includesEntity ex:BuildingA .
+
+ex:Record_Design1998 a gmont:ArchivalRecord ;
+    gmont:title "Original design narrative" ;
+    gmont:contentText "Design record describing the intended envelope and HVAC concept." ;
+    gmont:recordDate "1998-03-15"^^xsd:date ;
+    gmont:aboutObject ex:BuildingA ;
+    gmont:belongsToGeneration ex:DesignStage ;
+    gmont:hasMedia ex:DesignText1998 .
+
+ex:DesignText1998 a gmont:MediaObject ;
+    gmont:mediaType "text/plain" ;
+    gmont:formatLabel "text" ;
+    gmont:fileURI "https://example.org/archive/building-a/design-1998.txt"^^xsd:anyURI .
+
+ex:Record_Construction2000 a gmont:ArchivalRecord ;
+    gmont:title "Construction progress record" ;
+    gmont:recordDate "2000-08-21"^^xsd:date ;
+    gmont:aboutObject ex:BuildingA ;
+    gmont:belongsToGeneration ex:ConstructionStage ;
+    gmont:previousRecord ex:Record_Design1998 ;
+    gmont:sameSubjectAs ex:Record_Design1998 ;
+    gmont:hasMedia ex:ConstructionPhoto2000 .
+
+ex:ConstructionPhoto2000 a gmont:MediaObject ;
+    gmont:mediaType "image/jpeg" ;
+    gmont:formatLabel "photograph" ;
+    gmont:fileURI "https://example.org/archive/building-a/construction-2000.jpg"^^xsd:anyURI .
+
+ex:Record_Retrofit2018 a gmont:ArchivalRecord ;
+    gmont:title "Envelope and controls retrofit report" ;
+    gmont:contentText "Retrofit record documenting envelope upgrades and a new control system." ;
+    gmont:recordDate "2018-11-10"^^xsd:date ;
+    gmont:aboutObject ex:BuildingA ;
+    gmont:belongsToGeneration ex:RetrofitStage ;
+    gmont:previousRecord ex:Record_Construction2000 ;
+    gmont:sameSubjectAs ex:Record_Design1998, ex:Record_Construction2000 ;
+    gmont:hasMedia ex:RetrofitReport2018, ex:RetrofitScan2018 .
+
+ex:RetrofitReport2018 a gmont:MediaObject ;
+    gmont:mediaType "application/pdf" ;
+    gmont:formatLabel "report" ;
+    gmont:fileURI "https://example.org/archive/building-a/retrofit-2018.pdf"^^xsd:anyURI .
+
+ex:RetrofitScan2018 a gmont:MediaObject ;
+    gmont:mediaType "image/tiff" ;
+    gmont:formatLabel "scanned drawing" ;
+    gmont:fileURI "https://example.org/archive/building-a/retrofit-drawing-2018.tif"^^xsd:anyURI .
+
+ex:Record_Inspection2025 a gmont:ArchivalRecord ;
+    gmont:title "Post-retrofit inspection and digital-model record" ;
+    gmont:recordDate "2025-06-12"^^xsd:date ;
+    gmont:aboutObject ex:BuildingA ;
+    gmont:belongsToGeneration ex:OperationStage ;
+    gmont:previousRecord ex:Record_Retrofit2018 ;
+    gmont:sameSubjectAs ex:Record_Design1998, ex:Record_Construction2000, ex:Record_Retrofit2018 ;
+    gmont:hasMedia ex:InspectionVideo2025, ex:DigitalModel2025 .
+
+ex:InspectionVideo2025 a gmont:MediaObject ;
+    gmont:mediaType "video/mp4" ;
+    gmont:formatLabel "inspection video" ;
+    gmont:fileURI "https://example.org/archive/building-a/inspection-2025.mp4"^^xsd:anyURI .
+
+ex:DigitalModel2025 a gmont:MediaObject ;
+    gmont:mediaType "application/octet-stream" ;
+    gmont:formatLabel "digital building model" ;
+    gmont:fileURI "https://example.org/archive/building-a/model-2025.ifc"^^xsd:anyURI ;
+    gmont:derivedFrom ex:RetrofitScan2018 .

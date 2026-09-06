@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use GMOnt in research, software, or publications, please cite the archived release."
+title: "Generational Memory Ontology (GMOnt)"
+type: software
+version: "1.0.0"
+authors:
+  - family-names: Abtahi
+    given-names: Matin
+    orcid: "https://orcid.org/0000-0003-3941-9485"
+    affiliation: "Concordia University"
+repository-code: "https://github.com/matinabtahi/Generational-Memory-Ontology-GMOnt"
+url: "https://github.com/matinabtahi/Generational-Memory-Ontology-GMOnt"
+license: MIT
+keywords:
+  - ontology
+  - longitudinal archives
+  - multimodal archives
+  - semantic web
+  - digital heritage
+  - lifecycle records
