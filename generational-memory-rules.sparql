@@ -1,232 +1,52 @@
-PREFIX :       <https://github.com/matin-lab/generational-memory-ontology#>
-PREFIX xsd:    <http://www.w3.org/2001/XMLSchema#>
-PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX dc:     <http://purl.org/dc/elements/1.1/>
-PREFIX dcterms:<http://purl.org/dc/terms/>
+PREFIX gmont: <https://matinabtahi.github.io/Generational-Memory-Ontology-GMOnt/GMOnt#>
 
-#################################################################
-# GMO — SPARQL Rules + Queries
-#
-# Notes
-# - Uses the v0.1+ model that includes Agent/Organization/Place/Event/Relationship/Role
-# - Keeps kinship inference separate from social Relationship modeling
-# - Where the old model used :location (string), the new model prefers :aboutPlace / :hasPlace
-#   but still works with :location when present
-#################################################################
+# GMOnt v1.0.0 — example longitudinal inference/query patterns.
 
-
-#################################################################
-# SECTION 1 — INFERENCE RULES (CONSTRUCT)
-#################################################################
-
-### 1.1 Infer Grandparent Relationships (still valid)
+# 1. Materialise forward links from previousRecord.
 CONSTRUCT {
-  ?a :grandparentOf ?c .
+  ?older gmont:nextRecord ?newer .
 }
 WHERE {
-  ?a :parentOf ?b .
-  ?b :parentOf ?c .
-  FILTER(?a != ?c)
-} ;
+  ?newer gmont:previousRecord ?older .
+};
 
-### 1.2 Infer Cousin Relationships (still valid)
+# 2. Link records that explicitly document the same persistent entity.
 CONSTRUCT {
-  ?a :cousinOf ?b .
+  ?r1 gmont:sameSubjectAs ?r2 .
 }
 WHERE {
-  ?a :childOf ?p1 .
-  ?b :childOf ?p2 .
-  ?p1 :siblingOf ?p2 .
-  FILTER(?a != ?b)
-} ;
+  ?r1 gmont:aboutEntity ?entity .
+  ?r2 gmont:aboutEntity ?entity .
+  FILTER(?r1 != ?r2)
+};
 
-### 1.3 Infer Person ↔ Generation Membership from Birth Date Ranges
-# IMPORTANT:
-# - In the ontology, generation membership is modeled as :memberOfGeneration (Person → Generation)
-# - This rule constructs :memberOfGeneration (and you still have :includesPerson as inverse)
-#
-# You will need these two datatype properties in your dataset/schema if you want this rule:
-#   :ApproximateBirthRangeStart  xsd:date
-#   :ApproximateBirthRangeEnd    xsd:date
-#
-CONSTRUCT {
-  ?person :memberOfGeneration ?gen .
-}
+# 3. Retrieve a longitudinal record sequence for one entity.
+SELECT DISTINCT ?record ?date ?media ?mediaType
 WHERE {
-  ?person a :Person ;
-          :birthDate ?date .
-  ?gen a :Generation ;
-       :ApproximateBirthRangeStart ?start ;
-       :ApproximateBirthRangeEnd ?end .
-  FILTER(?date >= ?start && ?date <= ?end)
-} ;
-
-### 1.4 Link Memories Recorded by the Same Agent (person or organization)
-# New model generalizes :recordedBy to :Agent (Person or Organization)
-CONSTRUCT {
-  ?m1 :relatedTo ?m2 .
-}
-WHERE {
-  ?m1 a :Memory ; :recordedBy ?a .
-  ?m2 a :Memory ; :recordedBy ?a .
-  FILTER(?m1 != ?m2)
-} ;
-
-### 1.5 Link Memories About the Same Event (new, structure-aware)
-CONSTRUCT {
-  ?m1 :relatedTo ?m2 .
-}
-WHERE {
-  ?m1 a :Memory ; :aboutEvent ?e .
-  ?m2 a :Memory ; :aboutEvent ?e .
-  FILTER(?m1 != ?m2)
-} ;
-
-### 1.6 Link Memories About the Same Place (structured place; fallback to text location)
-CONSTRUCT {
-  ?m1 :relatedTo ?m2 .
-}
-WHERE {
-  {
-    ?m1 a :Memory ; :aboutPlace ?p .
-    ?m2 a :Memory ; :aboutPlace ?p .
-  }
-  UNION
-  {
-    ?m1 a :Memory ; :location ?loc .
-    ?m2 a :Memory ; :location ?loc .
-  }
-  FILTER(?m1 != ?m2)
-} ;
-
-#################################################################
-# SECTION 2 — ANALYTICAL QUERIES (SELECT / CONSTRUCT)
-#################################################################
-
-### 2.1 Find All Memories Recorded by Descendants of [Person X]
-# Replace :Alice with any Person of interest
-SELECT DISTINCT ?descendant ?memory ?text ?date
-WHERE {
-  # descendants via parent-child closure
-  ?descendant (:childOf)+ :Alice .
-
-  ?memory a :Memory ;
-          :recordedBy ?descendant ;
-          :contentText ?text ;
-          :dateRecorded ?date .
-}
-ORDER BY ?date ;
-
-#################################################################
-
-### 2.2 Show All Videos from the "2nd Generation" About Migration
-# Updates:
-# - Media type typically uses MIME strings in the new example (e.g., "video/mp4")
-# - We match any mediaType that starts with "video"
-# - Memories can reference events/places; we still filter by text content for "migration"
-SELECT DISTINCT ?memory ?file ?creator ?text
-WHERE {
-  ?gen a :Generation ;
-       rdfs:label "2nd Generation" .
-
-  ?memory a :Memory ;
-          :belongsToGeneration ?gen ;
-          :recordedBy ?creator ;
-          :hasMedia ?media ;
-          :contentText ?text .
-
-  ?media a :MediaObject ;
-         :mediaType ?mt ;
-         :fileURI ?file .
-
-  FILTER(STRSTARTS(LCASE(STR(?mt)), "video"))
-  FILTER(CONTAINS(LCASE(STR(?text)), "migration"))
-}
-ORDER BY ?creator ;
-
-#################################################################
-
-### 2.3 Retrieve All Memories Associated with "the House in Tehran"
-# Updates:
-# - Prefer structured place queries (:aboutPlace with rdfs:label), but keep fallback to :location
-# - This query returns both patterns
-SELECT DISTINCT ?memory ?person ?place ?placeLabel ?media ?type ?date ?text
-WHERE {
-  ?memory a :Memory ;
-          :contentText ?text ;
-          :dateRecorded ?date .
-
-  OPTIONAL { ?memory :aboutPerson ?person . }
-
+  ?record gmont:aboutEntity ?entity ;
+          gmont:recordDate ?date .
   OPTIONAL {
-    ?memory :hasMedia ?media .
-    OPTIONAL { ?media :mediaType ?type . }
+    ?record gmont:hasMedia ?media .
+    OPTIONAL { ?media gmont:mediaType ?mediaType . }
   }
-
-  OPTIONAL {
-    ?memory :aboutPlace ?place .
-    OPTIONAL { ?place rdfs:label ?placeLabel . }
-  }
-
-  OPTIONAL { ?memory :location ?loc . }
-
-  FILTER(
-    (BOUND(?placeLabel) && CONTAINS(LCASE(STR(?placeLabel)), "tehran"))
-    ||
-    (BOUND(?loc) && CONTAINS(LCASE(STR(?loc)), "tehran"))
-  )
 }
-ORDER BY ?date ;
+ORDER BY ?date;
 
-#################################################################
+# 4. Retrieve multimodal representations associated with the same subject.
+SELECT DISTINCT ?entity ?record ?date ?media ?mediaType
+WHERE {
+  ?record gmont:aboutEntity ?entity ;
+          gmont:recordDate ?date ;
+          gmont:hasMedia ?media .
+  ?media gmont:mediaType ?mediaType .
+}
+ORDER BY ?entity ?date ?mediaType;
 
-### 2.4 Visualize the Lineage Graph (edge list)
-# Produces an edge list for graph visualization (Gephi, Cytoscape, etc.)
-# If you already materialize :ancestorOf, this returns it directly:
+# 5. Human-memory specialization: infer ancestors from parent links.
 CONSTRUCT {
-  ?ancestor :ancestorOf ?descendant .
+  ?ancestor gmont:ancestorOf ?descendant .
 }
 WHERE {
-  ?ancestor :ancestorOf ?descendant .
-}
-LIMIT 100 ;
-
-#################################################################
-
-### 2.5 Alternative: Restrict lineage depth to 4 generations (using :parentOf paths)
-# This constructs ancestor edges up to depth 4 even if :ancestorOf is not materialized.
-CONSTRUCT {
-  ?a :ancestorOf ?d .
-}
-WHERE {
-  {
-    ?a :parentOf ?d .
-  }
-  UNION {
-    ?a :parentOf/:parentOf ?d .
-  }
-  UNION {
-    ?a :parentOf/:parentOf/:parentOf ?d .
-  }
-  UNION {
-    ?a :parentOf/:parentOf/:parentOf/:parentOf ?d .
-  }
-  FILTER(?a != ?d)
-} ;
-
-#################################################################
-
-### 2.6 (New) Social graph edges from :Relationship instances (for visualization)
-# Extracts a simple edge list: agent1 --(relationshipType)--> agent2
-SELECT DISTINCT ?a1 ?a2 ?rtype ?rtypeLabel ?rel ?start ?end
-WHERE {
-  ?rel a :Relationship ;
-       :hasParticipant ?a1, ?a2 ;
-       :relationshipType ?rtype .
-  OPTIONAL { ?rtype rdfs:label ?rtypeLabel . }
-  OPTIONAL { ?rel :relationshipStart ?start . }
-  OPTIONAL { ?rel :relationshipEnd ?end . }
-
-  FILTER(?a1 != ?a2)
-}
-ORDER BY ?rtypeLabel ?a1 ?a2 ;
+  ?ancestor (gmont:parentOf)+ ?descendant .
+  FILTER(?ancestor != ?descendant)
+};
