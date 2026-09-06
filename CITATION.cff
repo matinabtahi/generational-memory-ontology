@@ -3,13 +3,14 @@ message: "If you use GMOnt in research, software, or publications, please cite t
 title: "Generational Memory Ontology (GMOnt)"
 type: software
 version: "1.0.0"
+abstract: "A lightweight OWL ontology for longitudinal multimodal archives, linking persistent entities and records across time, generations, lifecycle stages, versions and media formats."
 authors:
   - family-names: Abtahi
     given-names: Matin
     orcid: "https://orcid.org/0000-0003-3941-9485"
     affiliation: "Concordia University"
-repository-code: "https://github.com/matinabtahi/Generational-Memory-Ontology-GMOnt"
-url: "https://github.com/matinabtahi/Generational-Memory-Ontology-GMOnt"
+repository-code: "https://github.com/matinabtahi/Generational-MemoryOntology"
+url: "https://github.com/matinabtahi/Generational-MemoryOntology"
 license: MIT
 keywords:
   - ontology

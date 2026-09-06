@@ -1,0 +1,4 @@
+PREFIX gmont: <https://matinabtahi.github.io/Generational-MemoryOntology/GMOnt#>
+
+CONSTRUCT { ?ancestor gmont:ancestorOf ?descendant . }
+WHERE { ?ancestor (gmont:parentOf)+ ?descendant . FILTER(?ancestor != ?descendant) }

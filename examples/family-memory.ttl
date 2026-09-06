@@ -1,4 +1,4 @@
-@prefix gmont: <https://matinabtahi.github.io/Generational-Memory-Ontology-GMOnt/GMOnt#> .
+@prefix gmont: <https://matinabtahi.github.io/Generational-MemoryOntology/GMOnt#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix ex: <https://example.org/gmont-family-demo#> .
@@ -19,19 +19,9 @@ ex:Laura a gmont:Person ;
     gmont:birthDate "2000-09-17"^^xsd:date ;
     gmont:childOf ex:Robert .
 
-ex:Generation1 a gmont:Generation ;
-    rdfs:label "first family generation"@en ;
-    gmont:includesEntity ex:Alice .
-
-ex:Generation2 a gmont:Generation ;
-    rdfs:label "second family generation"@en ;
-    gmont:followsGeneration ex:Generation1 ;
-    gmont:includesEntity ex:Robert .
-
-ex:Generation3 a gmont:Generation ;
-    rdfs:label "third family generation"@en ;
-    gmont:followsGeneration ex:Generation2 ;
-    gmont:includesEntity ex:Laura .
+ex:Generation1 a gmont:Generation ; rdfs:label "first family generation"@en ; gmont:includesEntity ex:Alice .
+ex:Generation2 a gmont:Generation ; rdfs:label "second family generation"@en ; gmont:followsGeneration ex:Generation1 ; gmont:includesEntity ex:Robert .
+ex:Generation3 a gmont:Generation ; rdfs:label "third family generation"@en ; gmont:followsGeneration ex:Generation2 ; gmont:includesEntity ex:Laura .
 
 ex:Memory2005 a gmont:Memory ;
     gmont:title "Migration recollection" ;

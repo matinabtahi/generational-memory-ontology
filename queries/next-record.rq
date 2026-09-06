@@ -1,0 +1,4 @@
+PREFIX gmont: <https://matinabtahi.github.io/Generational-MemoryOntology/GMOnt#>
+
+CONSTRUCT { ?older gmont:nextRecord ?newer . }
+WHERE { ?newer gmont:previousRecord ?older . }

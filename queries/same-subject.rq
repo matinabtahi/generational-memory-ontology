@@ -1,0 +1,8 @@
+PREFIX gmont: <https://matinabtahi.github.io/Generational-MemoryOntology/GMOnt#>
+
+CONSTRUCT { ?record1 gmont:sameSubjectAs ?record2 . }
+WHERE {
+  ?record1 (gmont:aboutEntity|gmont:aboutPerson|gmont:aboutOrganization|gmont:aboutPlace|gmont:aboutObject|gmont:aboutEvent) ?entity .
+  ?record2 (gmont:aboutEntity|gmont:aboutPerson|gmont:aboutOrganization|gmont:aboutPlace|gmont:aboutObject|gmont:aboutEvent) ?entity .
+  FILTER(?record1 != ?record2)
+}

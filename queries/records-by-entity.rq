@@ -1,0 +1,8 @@
+PREFIX gmont: <https://matinabtahi.github.io/Generational-MemoryOntology/GMOnt#>
+
+SELECT DISTINCT ?record ?date ?media ?mediaType
+WHERE {
+  ?record (gmont:aboutEntity|gmont:aboutPerson|gmont:aboutOrganization|gmont:aboutPlace|gmont:aboutObject|gmont:aboutEvent) ?entity ; gmont:recordDate ?date .
+  OPTIONAL { ?record gmont:hasMedia ?media . OPTIONAL { ?media gmont:mediaType ?mediaType . } }
+}
+ORDER BY ?date ?record
