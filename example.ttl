@@ -1,187 +1,64 @@
-@prefix : <https://github.com/matin-lab/generational-memory-ontology#> .
+@prefix gmont: <https://matinabtahi.github.io/Generational-Memory-Ontology-GMOnt/GMOnt#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ex: <https://example.org/gmont-family-demo#> .
 
-#################################################################
-# Example Dataset (aligned with GMO v0.1 that includes Relationship/Event/Place/Organization/Role)
-#
-# What this example demonstrates
-# - 3 generations (people + generation ordering)
-# - Memories linked to structured Place and Event (not only free-text location)
-# - A non-family relationship modeled via :Relationship (Employment + Mentorship)
-# - Organization as an Agent in a relationship
-# - Optional: keeping :location (free text) alongside structured :aboutPlace
-#################################################################
+# Human/family-memory application example.
 
-#################################################################
-# People — three generations
-#################################################################
+ex:Alice a gmont:Person ;
+    gmont:name "Alice Thompson" ;
+    gmont:birthDate "1945-07-12"^^xsd:date .
 
-:Alice a :Person ;
-    :name "Alice Thompson" ;
-    :birthDate "1945-07-12"^^xsd:date ;
-    :biography "Alice migrated from London to Toronto after finishing school." .
+ex:Robert a gmont:Person ;
+    gmont:name "Robert Thompson" ;
+    gmont:birthDate "1970-05-03"^^xsd:date ;
+    gmont:childOf ex:Alice .
 
-:Robert a :Person ;
-    :name "Robert Thompson" ;
-    :birthDate "1970-05-03"^^xsd:date ;
-    :childOf :Alice ;
-    :spouseOf :Natalie ;
-    :biography "Software engineer, grew up hearing Alice’s migration stories." .
+ex:Laura a gmont:Person ;
+    gmont:name "Laura Thompson" ;
+    gmont:birthDate "2000-09-17"^^xsd:date ;
+    gmont:childOf ex:Robert .
 
-:Natalie a :Person ;
-    :name "Natalie Green" ;
-    :birthDate "1975-01-21"^^xsd:date ;
-    :biography "Teacher and community historian with roots in Manchester." .
+ex:Generation1 a gmont:Generation ;
+    rdfs:label "first family generation"@en ;
+    gmont:includesEntity ex:Alice .
 
-:Laura a :Person ;
-    :name "Laura Thompson" ;
-    :birthDate "2000-09-17"^^xsd:date ;
-    :childOf :Robert, :Natalie ;
-    :biography "Media artist documenting family stories through film and digital archives." .
+ex:Generation2 a gmont:Generation ;
+    rdfs:label "second family generation"@en ;
+    gmont:followsGeneration ex:Generation1 ;
+    gmont:includesEntity ex:Robert .
 
-#################################################################
-# Generations
-#################################################################
+ex:Generation3 a gmont:Generation ;
+    rdfs:label "third family generation"@en ;
+    gmont:followsGeneration ex:Generation2 ;
+    gmont:includesEntity ex:Laura .
 
-:Generation_Postwar a :Generation ;
-    rdfs:label "1st Generation" ;
-    :includesPerson :Alice .
+ex:Memory2005 a gmont:Memory ;
+    gmont:title "Migration recollection" ;
+    gmont:contentText "Alice records a recollection for the family archive." ;
+    gmont:recordedBy ex:Alice ;
+    gmont:aboutPerson ex:Alice ;
+    gmont:recordDate "2005-04-02"^^xsd:date ;
+    gmont:belongsToGeneration ex:Generation1 ;
+    gmont:hasMedia ex:Audio2005 .
 
-:Generation_Digital a :Generation ;
-    rdfs:label "2nd Generation" ;
-    :includesPerson :Robert, :Natalie ;
-    :followsGeneration :Generation_Postwar .
+ex:Audio2005 a gmont:MediaObject ;
+    gmont:mediaType "audio/mpeg" ;
+    gmont:formatLabel "oral-history audio" ;
+    gmont:fileURI "https://example.org/archive/alice-2005.mp3"^^xsd:anyURI .
 
-:Generation_NewCentury a :Generation ;
-    rdfs:label "3rd Generation" ;
-    :includesPerson :Laura ;
-    :followsGeneration :Generation_Digital .
+ex:Memory2021 a gmont:Memory ;
+    gmont:title "Intergenerational reflection" ;
+    gmont:contentText "Laura creates a video record reflecting on Alice's earlier account." ;
+    gmont:recordedBy ex:Laura ;
+    gmont:aboutPerson ex:Alice ;
+    gmont:recordDate "2021-06-12"^^xsd:date ;
+    gmont:previousRecord ex:Memory2005 ;
+    gmont:sameSubjectAs ex:Memory2005 ;
+    gmont:belongsToGeneration ex:Generation3 ;
+    gmont:hasMedia ex:Video2021 .
 
-#################################################################
-# Places (structured locations)
-#################################################################
-
-:London a :Place ;
-    rdfs:label "London, UK" .
-
-:Toronto a :Place ;
-    rdfs:label "Toronto, Canada" .
-
-:ThompsonHouse_London a :Place ;
-    rdfs:label "Thompson Family Home (London)" .
-
-#################################################################
-# Events (structured occurrences)
-#################################################################
-
-:Event_Migration1963 a :Event ;
-    rdfs:label "Alice migrates from London to Toronto" ;
-    :timeStart "1963-08-01"^^xsd:date ;
-    :hasPlace :London .
-
-:Event_FamilyHomeVisit2021 a :Event ;
-    rdfs:label "Laura visits the old family home and films reflections" ;
-    :timeStart "2021-06-12"^^xsd:date ;
-    :hasPlace :ThompsonHouse_London .
-
-#################################################################
-# Organization (non-family social actor)
-#################################################################
-
-:TorontoFilmCollective a :Organization ;
-    rdfs:label "Toronto Film Collective" ;
-    dc:description "A community arts organization supporting documentary projects." .
-
-#################################################################
-# Roles (minimal vocabulary instances)
-#################################################################
-
-:Employment a :Role ; rdfs:label "Employment" .
-:Mentorship a :Role ; rdfs:label "Mentorship" .
-
-:Employer a :Role ; rdfs:label "Employer" .
-:Employee a :Role ; rdfs:label "Employee" .
-:Mentor a :Role ; rdfs:label "Mentor" .
-:Mentee a :Role ; rdfs:label "Mentee" .
-
-#################################################################
-# Non-family Relationships (reified)
-#################################################################
-# Example 1: Employment relationship between Robert and an organization
-
-:Rel_Robert_Employment a :Relationship ;
-    rdfs:label "Robert employed by Toronto Film Collective" ;
-    :hasParticipant :Robert, :TorontoFilmCollective ;
-    :relationshipType :Employment ;
-    :participantRole :Employee, :Employer ;
-    :relationshipStart "2012-09-01"^^xsd:date ;
-    :relationshipEnd "2018-06-30"^^xsd:date .
-
-:Robert :hasRelationship :Rel_Robert_Employment .
-:TorontoFilmCollective :hasRelationship :Rel_Robert_Employment .
-
-# Example 2: Mentorship relationship between Natalie and Laura (non-kinship social link)
-
-:Rel_Natalie_Laura_Mentorship a :Relationship ;
-    rdfs:label "Natalie mentors Laura in oral history methods" ;
-    :hasParticipant :Natalie, :Laura ;
-    :relationshipType :Mentorship ;
-    :participantRole :Mentor, :Mentee ;
-    :relationshipStart "2016-01-01"^^xsd:date .
-
-:Natalie :hasRelationship :Rel_Natalie_Laura_Mentorship .
-:Laura   :hasRelationship :Rel_Natalie_Laura_Mentorship .
-
-#################################################################
-# Memories and Media (now linked to Person + Event + Place)
-#################################################################
-
-:Memory_Migration a :Memory ;
-    :contentText "Alice recalls moving from London to Toronto in 1963 to start a new life." ;
-    :dateRecorded "2005-04-02"^^xsd:date ;
-    :recordedBy :Alice ;
-    :hasMedia :Photo_Migration ;
-    :aboutPerson :Alice ;
-    :aboutEvent :Event_Migration1963 ;
-    :aboutPlace :London ;
-    :belongsToGeneration :Generation_Postwar ;
-    :location "London" ;
-    :source <https://example.org/archive/interview_alice_2005> ;
-    :confidence "0.85"^^xsd:decimal .
-
-:Photo_Migration a :MediaObject ;
-    :mediaType "image/jpeg" ;
-    :fileURI <https://example.org/media/alice_london_migration.jpg> ;
-    dc:description "Alice aboard the ship to Canada, 1963." .
-
-:Memory_FamilyHome a :Memory ;
-    :contentText "Laura visits the old family house in London, filming reflections on her grandmother’s stories." ;
-    :dateRecorded "2021-06-12"^^xsd:date ;
-    :recordedBy :Laura ;
-    :hasMedia :Video_FamilyHome ;
-    :aboutPerson :Alice ;
-    :aboutEvent :Event_FamilyHomeVisit2021 ;
-    :aboutPlace :ThompsonHouse_London ;
-    :belongsToGeneration :Generation_NewCentury ;
-    :location "London" ;
-    :references :Memory_Migration .
-
-:Video_FamilyHome a :MediaObject ;
-    :mediaType "video/mp4" ;
-    :fileURI <https://example.org/media/laura_family_home.mp4> ;
-    dc:description "Laura’s short documentary revisiting her grandmother’s migration to Toronto." .
-
-#################################################################
-# Notes on Inference Targets (not asserted here)
-#################################################################
-# - If you maintain SPARQL rules, you can infer :ancestorOf / :descendantOf from :parentOf closure
-# - You can infer memory links via :references or :inspiredBy patterns (application-defined)
-# - Generation membership can be asserted via :memberOfGeneration (inverse of :includesPerson) if desired
-#
-# Example (optional, explicit inverse usage):
-# :Alice  :memberOfGeneration :Generation_Postwar .
-# :Robert :memberOfGeneration :Generation_Digital .
-# :Natalie:memberOfGeneration :Generation_Digital .
-# :Laura  :memberOfGeneration :Generation_NewCentury .
+ex:Video2021 a gmont:MediaObject ;
+    gmont:mediaType "video/mp4" ;
+    gmont:formatLabel "documentary video" ;
+    gmont:fileURI "https://example.org/archive/laura-2021.mp4"^^xsd:anyURI .
